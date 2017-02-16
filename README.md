@@ -12,13 +12,13 @@ $ pip install git+https://github.com/TobyPDE/chianti
 ``` 
 # Documentation
 
-Read here: [http://chianti.readthedocs.io/en/latest/]()
+Read here: [http://chianti.readthedocs.io/en/latest/](http://chianti.readthedocs.io/en/latest/)
 
 # Usage
 
 Assume that `files` is a list of filename tuples. 
 The first entry of each entry is the filename of the source image while the second entry is the target filename.
-Then the following creates a new data provider that iterates in epochs randomly over `files`:
+Then the following creates a new data provider that iterates in epochs randomly over `files`.
 The pre-processing steps consist of subsampling the images by a factor of 4 and then applying random gamma and translation augmentation steps.
 
 ```
