@@ -29,6 +29,24 @@ This allows you to maximize GPU load during training.
         :type batchsize: int
         :type augmentors: list(Augmentor)
 
+    .. py:method:: next()
+
+        Returns the next batch of images.
+
+        :return: A tuple of two numpy arrays. The first array contains the source batch and the second entry contains the target batch.
+        
+    .. py:method:: reset()
+
+        Resets the underlying iterator to the beginning. This is useful if you want to deterministically iterate over a dataset.
+
+    .. py:method:: get_num_batches()
+
+        Returns the total number of batches per epoch. 
+
+        :return: The number of batches per epoch.
+        :rtype: int
+        
+
 .. py:class:: Iterator
 
     A data iterator class. Use one of these factory methods in order to create new instances:
