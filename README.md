@@ -1,7 +1,7 @@
 # Chianti
 
-This Python extension is for people who train semantic segmentation system with Python. 
-It is primarily geared towards users of deep learning libraries that don't offer data streams (i.e. Theano/Lasagne).
+This Python extension is for people who train semantic segmentation systems with Python. 
+It is primarily aimed at users of deep learning libraries that don't offer data streams (i.e. Theano/Lasagne).
 With this extension, you can load batches of (augmented) images and label images asynchronously. 
 This allows you to maximize GPU load during training.
 
