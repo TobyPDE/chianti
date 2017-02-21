@@ -9,6 +9,126 @@
 #include <utility>
 #include <string>
 #include <memory>
+#include <structmember.h>
+
+// =====================================================================================================================
+// PyIterator
+// This class represents an iterator over pairs of image and label image paths. The class does not expose any methods
+// to the python environment.
+// =====================================================================================================================
+
+typedef struct {
+    PyObject_HEAD
+    PyObject* imgs;
+    PyObject* targets;
+    float* _imgs;
+    int* _targets;
+} PyBatch;
+
+// Define the methods (heads up: there are no)
+static PyMethodDef PyBatch_methods[] = {
+        {NULL}
+};
+
+static PyMemberDef PyBatch_members[] = {
+        {"imgs", T_OBJECT_EX, offsetof(PyBatch, imgs), 0, "Img batch"},
+        {"targets", T_OBJECT_EX, offsetof(PyBatch, targets), 0, "Target batch"},
+        {NULL}  /* Sentinel */
+};
+
+static void PyBatch_dealloc(PyBatch* self)
+{
+    if (self->_imgs != nullptr)
+    {
+        delete[] self->_imgs;
+    }
+
+    if (self->_targets != nullptr)
+    {
+        delete[] self->_targets;
+    }
+}
+
+static int PyBatch_init(PyBatch *self, PyObject *args, PyObject *kwds)
+{
+    self->_imgs = nullptr;
+    self->_targets = nullptr;
+    self->imgs = Py_None;
+    self->targets = Py_None;
+}
+
+static PyTypeObject PyBatchType = {
+        PyVarObject_HEAD_INIT(NULL, 0)
+        // tp_name
+        "chianti.Iterator",
+        // tp_basicsize
+        sizeof(PyBatch),
+        // tp_itemsize
+        0,
+        // tp_dealloc
+        (destructor) PyBatch_dealloc,
+        // tp_print
+        0,
+        // tp_getattr
+        0,
+        // tp_setattr
+        0,
+        // tp_reserved
+        0,
+        // tp_repr
+        0,
+        // tp_as_number
+        0,
+        // tp_as_sequence
+        0,
+        // tp_as_mapping
+        0,
+        // tp_hash
+        0,
+        // tp_call
+        0,
+        // tp_str
+        0,
+        // tp_getattro
+        0,
+        // tp_setattro
+        0,
+        // tp_as_buffer
+        0,
+        // tp_flags
+        Py_TPFLAGS_DEFAULT,
+        // tp_doc
+        "A batch of images and targets.",
+        // tp_traverse
+        0,
+        // tp_clear
+        0,
+        // tp_richcompare
+        0,
+        // tp_weaklistoffset
+        0,
+        // tp_iter
+        0,
+        // tp_iternext
+        0,
+        // tp_methods
+        PyBatch_methods,
+        // tp_members
+        PyBatch_members,
+        // tp_getset
+        0,
+        // tp_base
+        0,
+        // tp_dict
+        0,
+        // tp_descr_get
+        0,
+        // tp_descr_set
+        0,
+        // tp_dictoffset
+        0,
+        // tp_init
+        (initproc)PyBatch_init};
 
 // =====================================================================================================================
 // PyIterator
@@ -233,11 +353,15 @@ static PyObject* PyDataProvider_next(PyDataProvider* self)
         PyArrayObject* imgs = (PyArrayObject*) PyArray_FromDimsAndData(4, batch->imgsShape.begin(), NPY_FLOAT, (char*)batch->imgs);
         PyArrayObject* target = (PyArrayObject*) PyArray_FromDimsAndData(3, batch->targetsShape.begin(), NPY_INT, (char*)batch->targets);
 
-        // Create the return type (tuple)
-        PyObject* result = PyTuple_New(2);
-        PyTuple_SetItem(result, 0, (PyObject*) imgs);
-        PyTuple_SetItem(result, 1, (PyObject*) target);
-        return result;
+        // Create the return type (Batch)
+        PyBatch* pyBatch = (PyBatch*)PyBatchType.tp_alloc(&PyBatchType, 0);
+
+        pyBatch->_imgs = batch->imgs;
+        pyBatch->_targets = batch->targets;
+        pyBatch->imgs = (PyObject*) imgs;
+        pyBatch->targets = (PyObject*) target;
+
+        return (PyObject*) pyBatch;
     }
     else
     {
@@ -501,12 +625,15 @@ PyMODINIT_FUNC PyInit_chianti(void)
     PyDataProviderType.tp_new = PyType_GenericNew;
     PyAugmentorType.tp_new = PyType_GenericNew;
     PyIteratorType.tp_new = PyType_GenericNew;
+    PyBatchType.tp_new = PyType_GenericNew;
 
     if (PyType_Ready(&PyDataProviderType) < 0)
         return NULL;
     if (PyType_Ready(&PyAugmentorType) < 0)
         return NULL;
     if (PyType_Ready(&PyIteratorType) < 0)
+        return NULL;
+    if (PyType_Ready(&PyBatchType) < 0)
         return NULL;
 
     m = PyModule_Create(&chiantiModule);
@@ -516,10 +643,12 @@ PyMODINIT_FUNC PyInit_chianti(void)
     Py_INCREF(&PyDataProviderType);
     Py_INCREF(&PyAugmentorType);
     Py_INCREF(&PyIteratorType);
+    Py_INCREF(&PyBatchType);
 
     PyModule_AddObject(m, "DataProvider", (PyObject *)&PyDataProviderType);
     PyModule_AddObject(m, "Augmentor", (PyObject *)&PyAugmentorType);
     PyModule_AddObject(m, "Iterator", (PyObject *)&PyIteratorType);
+    PyModule_AddObject(m, "Batch", (PyObject *)&PyBatchType);
 
     import_array();
 

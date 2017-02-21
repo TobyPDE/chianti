@@ -33,7 +33,7 @@ This allows you to maximize GPU load during training.
 
         Returns the next batch of images.
 
-        :return: A tuple of two numpy arrays. The first array contains the source batch and the second entry contains the target batch.
+        :return: An instance of :py:class:`Batch`
         
     .. py:method:: reset()
 
@@ -117,3 +117,14 @@ This allows you to maximize GPU load during training.
 
     :return: A new cityscapes label transformation augmentor.
     :rtype: Augmentor
+
+
+.. py:class:: Batch
+
+    This class holds the batch tensors.
+
+    .. py:attribute:: imgs The tensor of images.
+
+    .. py:attribute:: targets The tensor of target values.
+
+
