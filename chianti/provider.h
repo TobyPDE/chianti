@@ -104,7 +104,6 @@ namespace Chianti {
             }
         }
 
-
         /**
          * This is a list of images to cycle through.
          */
@@ -250,7 +249,10 @@ namespace Chianti {
                         for (int i1 = 0; i1 < imgsShape[1]; i1++) {
                             // Convert it to RGB
                             const int _i1 = 2 - i1;
-                            imgs[i0 * imgsStrides[0] + _i1 * imgsStrides[1] + i2 * imgsStrides[2] + i3 * imgsStrides[3]] = img[i1];
+                            imgs[i0 * imgsStrides[0] + _i1 * imgsStrides[1] + i2 * imgsStrides[2] + i3 * imgsStrides[3]] = static_cast<float>(img[i1]);
+                            if (isnan(imgs[i0 * imgsStrides[0] + _i1 * imgsStrides[1] + i2 * imgsStrides[2] + i3 * imgsStrides[3]])) {
+                                imgs[i0 * imgsStrides[0] + _i1 * imgsStrides[1] + i2 * imgsStrides[2] + i3 * imgsStrides[3]] = 1.0f;
+                            }
                         }
                     }
                 }
