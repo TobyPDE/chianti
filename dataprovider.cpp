@@ -165,7 +165,7 @@ static PyTypeObject PyAugmentorType = {
 
 typedef struct {
     PyObject_HEAD
-    std::shared_ptr<Chianti::DataProvider> dataProvider;
+    std::shared_ptr<Chianti::TensorDataProvider> dataProvider;
 } PyDataProvider;
 
 static int PyDataProvider_init(PyDataProvider* self, PyObject* args, PyObject *keywords)
@@ -216,7 +216,7 @@ static int PyDataProvider_init(PyDataProvider* self, PyObject* args, PyObject *k
     auto dataProvider = std::make_shared<Chianti::DataProvider>(cppIterator, batchsize, cppAugmentor);
 
     // Create the data provider
-    self->dataProvider = dataProvider;
+    self->dataProvider = std::make_shared<Chianti::TensorDataProvider>(dataProvider);
 
     return 0;
 }
@@ -230,41 +230,13 @@ static PyObject* PyDataProvider_next(PyDataProvider* self)
         auto batch = self->dataProvider->next();
 
         // Convert the batch to numpy arrays
-        npy_intp imgDims[4] = {0, 3, 0, 0};
-        imgDims[0] = static_cast<npy_intp>(self->dataProvider->getBatchSize());
-        imgDims[2] = batch->at(0).img.rows;
-        imgDims[3] = batch->at(0).img.cols;
-        PyArrayObject* imgs = (PyArrayObject*) PyArray_ZEROS(4, imgDims, NPY_FLOAT, 0);
-
-        npy_intp targetDims[3] = {0, 0, 0};
-        targetDims[0] = static_cast<npy_intp>(self->dataProvider->getBatchSize());
-        targetDims[1] = batch->at(0).img.rows;
-        targetDims[2] = batch->at(0).img.cols;
-        PyArrayObject* target = (PyArrayObject*) PyArray_ZEROS(3, targetDims, NPY_INT, 0);
-
-        for (int i0 = 0; i0 < imgDims[0]; i0++) {
-            for (int i2 = 0; i2 < imgDims[2]; i2++) {
-                for (int i3 = 0; i3 < imgDims[3]; i3++) {
-                    npy_int* t = (npy_int*) PyArray_GETPTR3(target, i0, i2, i3);
-                    // Convert 255 to -1 (void labels)
-                    const uchar label = batch->at(i0).target.at<uchar>(i2, i3);;
-                    *t = label == 255 ? -1 : label;
-
-                    const cv::Vec3f & img = batch->at(i0).img.at<cv::Vec3f>(i2, i3);
-                    for (int i1 = 0; i1 < imgDims[1]; i1++) {
-                        // Convert it to RGB
-                        npy_float * x = (npy_float *) PyArray_GETPTR4(imgs, i0, 2 - i1, i2, i3);
-                        *x = img[i1];
-                    }
-                }
-            }
-        }
+        PyArrayObject* imgs = (PyArrayObject*) PyArray_FromDimsAndData(4, batch->imgsShape.begin(), NPY_FLOAT, (char*)batch->imgs);
+        PyArrayObject* target = (PyArrayObject*) PyArray_FromDimsAndData(3, batch->targetsShape.begin(), NPY_INT, (char*)batch->targets);
 
         // Create the return type (tuple)
         PyObject* result = PyTuple_New(2);
         PyTuple_SetItem(result, 0, (PyObject*) imgs);
         PyTuple_SetItem(result, 1, (PyObject*) target);
-
         return result;
     }
     else
