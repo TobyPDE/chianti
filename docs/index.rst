@@ -123,8 +123,12 @@ This allows you to maximize GPU load during training.
 
     This class holds the batch tensors.
 
-    .. py:attribute:: imgs The tensor of images.
+    .. py:attribute:: imgs
 
-    .. py:attribute:: targets The tensor of target values.
+        The tensor of images.
+
+    .. py:attribute:: targets
+
+        The tensor of target values.
 
 
