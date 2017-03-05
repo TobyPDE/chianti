@@ -95,7 +95,20 @@ namespace Chianti {
         void loadImageLabelPair(const std::pair<std::string, std::string> & imageName, ImageLabelPair & pair)
         {
             pair.img = cv::imread(imageName.first, 1);
+
+            if (pair.img.data == 0)
+            {
+                std::cout << "Cannot load image '" << imageName.first << "'.";
+                abort();
+            }
+
             pair.target = cv::imread(imageName.second, 0);
+
+            if (pair.target.data == 0)
+            {
+                std::cout << "Cannot load target '" << imageName.second << "'.";
+                abort();
+            }
 
             // Apply the augmentation steps if necessary
             if (augmentor != nullptr)

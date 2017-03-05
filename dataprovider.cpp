@@ -21,8 +21,6 @@ typedef struct {
     PyObject_HEAD
     PyObject* imgs;
     PyObject* targets;
-    float* _imgs;
-    int* _targets;
 } PyBatch;
 
 // Define the methods (heads up: there are no)
@@ -36,23 +34,8 @@ static PyMemberDef PyBatch_members[] = {
         {NULL}  /* Sentinel */
 };
 
-static void PyBatch_dealloc(PyBatch* self)
-{
-    if (self->_imgs != nullptr)
-    {
-        delete[] self->_imgs;
-    }
-
-    if (self->_targets != nullptr)
-    {
-        delete[] self->_targets;
-    }
-}
-
 static int PyBatch_init(PyBatch *self, PyObject *args, PyObject *kwds)
 {
-    self->_imgs = nullptr;
-    self->_targets = nullptr;
     self->imgs = Py_None;
     self->targets = Py_None;
 }
@@ -66,7 +49,7 @@ static PyTypeObject PyBatchType = {
         // tp_itemsize
         0,
         // tp_dealloc
-        (destructor) PyBatch_dealloc,
+        0,
         // tp_print
         0,
         // tp_getattr
@@ -341,6 +324,16 @@ static int PyDataProvider_init(PyDataProvider* self, PyObject* args, PyObject *k
     return 0;
 }
 
+template<size_t N>
+int prod(const std::array<int, N> & a)
+{
+    int result = 1;
+    for (size_t n = 0; n < N; n++)
+    {
+        result += a[n];
+    }
+    return result;
+}
 
 static PyObject* PyDataProvider_next(PyDataProvider* self)
 {
@@ -350,14 +343,17 @@ static PyObject* PyDataProvider_next(PyDataProvider* self)
         auto batch = self->dataProvider->next();
 
         // Convert the batch to numpy arrays
-        PyArrayObject* imgs = (PyArrayObject*) PyArray_FromDimsAndData(4, batch->imgsShape.begin(), NPY_FLOAT, (char*)batch->imgs);
-        PyArrayObject* target = (PyArrayObject*) PyArray_FromDimsAndData(3, batch->targetsShape.begin(), NPY_INT, (char*)batch->targets);
+        PyArrayObject* imgs = (PyArrayObject*) PyArray_FromDims(4, batch->imgsShape.begin(), NPY_FLOAT);
+        std::memcpy(imgs->data, batch->imgs, prod(batch->imgsShape));
+        PyArrayObject* target = (PyArrayObject*) PyArray_FromDims(3, batch->targetsShape.begin(), NPY_INT);
+        std::memcpy(target->data, batch->targets, prod(batch->targetsShape));
+
+        delete[] batch->imgs;
+        delete[] batch->targets;
 
         // Create the return type (Batch)
         PyBatch* pyBatch = (PyBatch*)PyBatchType.tp_alloc(&PyBatchType, 0);
 
-        pyBatch->_imgs = batch->imgs;
-        pyBatch->_targets = batch->targets;
         pyBatch->imgs = (PyObject*) imgs;
         pyBatch->targets = (PyObject*) target;
 
