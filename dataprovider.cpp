@@ -3,12 +3,6 @@
 
 #include "chianti/provider.h"
 #include "utils.h"
-#include "opencv2/opencv.hpp"
-
-#include <vector>
-#include <utility>
-#include <string>
-#include <memory>
 #include <structmember.h>
 
 // =====================================================================================================================
@@ -34,6 +28,12 @@ static PyMemberDef PyBatch_members[] = {
         {NULL}  /* Sentinel */
 };
 
+static void PyBatch_dealloc(PyBatch* self)
+{
+    Py_XDECREF(self->imgs);
+    Py_XDECREF(self->targets);
+}
+
 static int PyBatch_init(PyBatch *self, PyObject *args, PyObject *kwds)
 {
     self->imgs = Py_None;
@@ -49,7 +49,7 @@ static PyTypeObject PyBatchType = {
         // tp_itemsize
         0,
         // tp_dealloc
-        0,
+        (destructor) PyBatch_dealloc,
         // tp_print
         0,
         // tp_getattr
