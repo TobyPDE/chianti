@@ -515,6 +515,51 @@ static PyObject* randomIterator(PyObject* self, PyObject* args, PyObject *keywor
     }
 }
 
+static PyObject* sampleIterator(PyObject* self, PyObject* args, PyObject *keywords)
+{
+    static char *keywordList[] = {"files", "weights", 0};
+
+    PyObject* files = nullptr;
+    PyObject* weights = nullptr;
+
+    if (!PyArg_ParseTupleAndKeywords(
+            args,
+            keywords,
+            "O!O!",
+            keywordList,
+            &PyList_Type, &files,
+            &PyList_Type, &weights))
+    {
+        return 0;
+    }
+
+
+    try {
+        // Extract the list of tuples
+        std::vector<std::pair<std::string, std::string>> tupleList;
+        PythonUtils::iterateList(files, [&tupleList](int i, PyObject* tuple) {
+            tupleList.push_back(std::make_pair<std::string, std::string>(
+                    PythonUtils::objectToString(PythonUtils::getTupleEntry(0, tuple)),
+                    PythonUtils::objectToString(PythonUtils::getTupleEntry(1, tuple))
+            ));
+        });
+
+        std::vector<double> weightList;
+        PythonUtils::iterateList(weights, [&weightList](int i, PyObject* w) {
+            weightList.push_back(PythonUtils::objectToDouble(w));
+        });
+
+        // Make the python object
+        PyIterator* iterator = (PyIterator *)PyIteratorType.tp_alloc(&PyIteratorType, 0);
+        iterator->iterator = std::make_shared<Chianti::SampleIterator<std::pair<std::string, std::string>> >(tupleList, weightList);
+
+        return (PyObject*) iterator;
+    } catch (ConversionException e) {
+        PyErr_SetString(PyExc_RuntimeError, e.what());
+        return 0;
+    }
+}
+
 static PyObject* subsampleAugmentor(PyObject* self, PyObject* args, PyObject *keywords)
 {
     static char *keywordList[] = {"factor", 0};
@@ -597,6 +642,7 @@ static PyObject* cityscapesLabelTransformationAugmentor(PyObject* self, PyObject
 static PyMethodDef chiantiMethods[] = {
         {"sequential_iterator", (PyCFunction)sequentialIterator, METH_VARARGS | METH_KEYWORDS, "Creates a new sequential (non random) iterator."},
         {"random_iterator", (PyCFunction)randomIterator, METH_VARARGS | METH_KEYWORDS, "Creates a new random (batch-based) iterator."},
+        {"sample_iterator", (PyCFunction)sampleIterator, METH_VARARGS | METH_KEYWORDS, "Creates a new sample iterator that randomly samples each target according to a given weight."},
         {"subsample_augmentor", (PyCFunction)subsampleAugmentor, METH_VARARGS | METH_KEYWORDS, "Creates a new augmentation step that subsamples the images."},
         {"gamma_augmentor", (PyCFunction)gammaAugmentor, METH_VARARGS | METH_KEYWORDS, "Creates a new random gamma augmentor."},
         {"translation_augmentor", (PyCFunction)translationAugmentor, METH_VARARGS | METH_KEYWORDS, "Creates a new random translation augmentor."},

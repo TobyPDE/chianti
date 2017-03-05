@@ -190,6 +190,7 @@ namespace Chianti {
         SampleIterator(const std::vector<T> & resources, const std::vector<double> & weights) : resources(resources), weights(weights)
         {
             assert(resources.size() == weights.size());
+            normalizeWeights();
         }
 
         /**
@@ -234,6 +235,20 @@ namespace Chianti {
         }
 
     private:
+        void normalizeWeights()
+        {
+            // Normalize the weights
+            double total = 0.0;
+            for (size_t i = 0; i < weights.size(); i++) {
+                weights[i] = std::max(weights[i], 0.0);
+                total += weights[i];
+            }
+
+            for (size_t i = 0; i < weights.size(); i++) {
+                weights[i] /= total;
+            }
+        }
+
         /**
          * The underlying resource
          */
