@@ -330,7 +330,7 @@ int prod(const std::array<int, N> & a)
     int result = 1;
     for (size_t n = 0; n < N; n++)
     {
-        result += a[n];
+        result *= a[n];
     }
     return result;
 }
@@ -344,9 +344,9 @@ static PyObject* PyDataProvider_next(PyDataProvider* self)
 
         // Convert the batch to numpy arrays
         PyArrayObject* imgs = (PyArrayObject*) PyArray_FromDims(4, batch->imgsShape.begin(), NPY_FLOAT);
-        std::memcpy(imgs->data, batch->imgs, prod(batch->imgsShape));
+        std::memcpy(imgs->data, batch->imgs, prod(batch->imgsShape) * sizeof(float));
         PyArrayObject* target = (PyArrayObject*) PyArray_FromDims(3, batch->targetsShape.begin(), NPY_INT);
-        std::memcpy(target->data, batch->targets, prod(batch->targetsShape));
+        std::memcpy(target->data, batch->targets, prod(batch->targetsShape) * sizeof(int));
 
         delete[] batch->imgs;
         delete[] batch->targets;

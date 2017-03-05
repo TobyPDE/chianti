@@ -131,8 +131,6 @@ namespace Chianti {
         {
             transformationTable.resize(34);
             transformationTable[0] = 255;
-
-            transformationTable[0] = 255;
             transformationTable[1] = 255;
             transformationTable[2] = 255;
             transformationTable[3] = 255;
