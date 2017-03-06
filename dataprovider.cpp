@@ -4,6 +4,7 @@
 #include "chianti/provider.h"
 #include "utils.h"
 #include <structmember.h>
+#include <cstring>
 
 // =====================================================================================================================
 // PyIterator
