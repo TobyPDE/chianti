@@ -86,10 +86,60 @@ namespace Chianti {
         {
             auto newSize = cv::Size(data.img.cols / samplingFactor, data.img.rows / samplingFactor);
             cv::resize(data.img, data.img, newSize, 0, 0, CV_INTER_LANCZOS4);
-            cv::resize(data.target, data.target, newSize, 0, 0, CV_INTER_NN);
+            resizeLabels(data.target);
         }
 
     private:
+        /**
+         * Resizes a label image.
+         */
+        void resizeLabels(cv::Mat & t) const
+        {
+            // Allocate the new image
+            cv::Mat tNew(t.rows / samplingFactor, t.cols / samplingFactor, CV_8UC1);
+
+            for (int i = 0; i < tNew.rows; i++)
+            {
+                for (int j = 0; j < tNew.cols; j++)
+                {
+                    // Create a histogram of labels
+                    int histogram[256] = {0};
+
+                    for (int blockI = i * samplingFactor; blockI < (i + 1) * samplingFactor; blockI++)
+                    {
+                        for (int blockJ = j * samplingFactor; blockJ < (j + 1) * samplingFactor; blockJ++)
+                        {
+                            histogram[t.at<uchar>(blockI, blockJ)]++;
+                        }
+                    }
+
+                    // Determine the best label
+                    int bestLabel = 0;
+                    int bestLabelFrequency = 0;
+                    for (int k = 0; k < 256; k++)
+                    {
+                        if (histogram[k] > bestLabelFrequency)
+                        {
+                            bestLabelFrequency = histogram[k];
+                            bestLabel = k;
+                        }
+                    }
+
+                    // Is the label sufficiently distinct?
+                    if (bestLabelFrequency > 0.5 * samplingFactor * samplingFactor)
+                    {
+                        tNew.at<uchar>(i, j) = static_cast<uchar>(bestLabel);
+                    }
+                    else
+                    {
+                        tNew.at<uchar>(i, j) = 255;
+                    }
+                }
+            }
+
+            tNew.copyTo(t);
+        }
+
         /**
          * The subsampling factor
          */

@@ -38,6 +38,8 @@ static int PyBatch_init(PyBatch *self, PyObject *args, PyObject *kwds)
 {
     self->imgs = Py_None;
     self->targets = Py_None;
+    
+    return 0;
 }
 
 static PyTypeObject PyBatchType = {
