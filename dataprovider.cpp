@@ -628,6 +628,28 @@ static PyObject* translationAugmentor(PyObject* self, PyObject* args, PyObject *
     return (PyObject*) augmentor;
 }
 
+static PyObject* zoomingAugmentor(PyObject* self, PyObject* args, PyObject *keywords)
+{
+    static char *keywordList[] = {"range", 0};
+
+    double range = 0.5;
+
+    if (!PyArg_ParseTupleAndKeywords(
+            args,
+            keywords,
+            "d",
+            keywordList,
+            &range))
+    {
+        return 0;
+    }
+
+    PyAugmentor* augmentor = (PyAugmentor*)PyAugmentorType.tp_alloc(&PyAugmentorType, 0);
+    augmentor->augmentor = std::make_shared<Chianti::ZoomingAugmentor>(range);
+
+    return (PyObject*) augmentor;
+}
+
 static PyObject* cityscapesLabelTransformationAugmentor(PyObject* self, PyObject* args, PyObject *keywords)
 {
     PyAugmentor* augmentor = (PyAugmentor*)PyAugmentorType.tp_alloc(&PyAugmentorType, 0);
@@ -648,6 +670,7 @@ static PyMethodDef chiantiMethods[] = {
         {"subsample_augmentor", (PyCFunction)subsampleAugmentor, METH_VARARGS | METH_KEYWORDS, "Creates a new augmentation step that subsamples the images."},
         {"gamma_augmentor", (PyCFunction)gammaAugmentor, METH_VARARGS | METH_KEYWORDS, "Creates a new random gamma augmentor."},
         {"translation_augmentor", (PyCFunction)translationAugmentor, METH_VARARGS | METH_KEYWORDS, "Creates a new random translation augmentor."},
+        {"zooming_augmentor", (PyCFunction)zoomingAugmentor, METH_VARARGS | METH_KEYWORDS, "Creates a new random zooming augmentor."},
         {"cityscapes_label_transformation_augmentor", (PyCFunction)cityscapesLabelTransformationAugmentor, METH_NOARGS, "Creates a new augmentation step to transform the cityscapes label ids to training ids."},
         {NULL, NULL, 0, NULL}
 };
@@ -661,7 +684,7 @@ static struct PyModuleDef chiantiModule = {
         -1,
         chiantiMethods
 };
-
+ 
 PyMODINIT_FUNC PyInit_chianti(void)
 {
     PyObject* m;

@@ -345,4 +345,85 @@ namespace Chianti {
          */
         int offset;
     };
+
+    /**
+     * Augments the image by randomly zooming in and out.
+     */
+    class ZoomingAugmentor : public IAugmentor {
+    public:
+        /**
+         * Initializes a new instance of the TranslationAugmentor class.
+         */
+        ZoomingAugmentor(double range) : range(range) {}
+
+        /**
+         * Augments the given ImageLabelPair.
+         */
+        void augment(ImageLabelPair& data) const
+        {
+            std::random_device rd;
+            std::mt19937 g(rd());
+            std::uniform_real_distribution<double> d(1 - range, 1 + range);
+
+            // Sample the zooming factor
+            const double factor = d(g);
+
+            // Compute the new image size
+            const int rows = static_cast<int>(data.img.rows * factor);
+            const int cols = static_cast<int>(data.img.cols * factor);
+
+            // Resize the data
+            cv::Mat img, target;
+            cv::resize(data.img, img, cv::Size(cols, rows), 0, 0, CV_INTER_LANCZOS4);
+            cv::resize(data.target, target, cv::Size(cols, rows), 0, 0, CV_INTER_NN);
+
+            cv::Mat finalImg = cv::Mat::zeros(data.img.rows, data.img.cols, CV_32FC3);
+            cv::Mat finalTarget = 255 * cv::Mat::ones(data.img.rows, data.img.cols, CV_8UC1);
+
+            // Create the final images
+            // If the images are up-sampled, they have to be cropped
+            // If the images are down-sampled, they have to be embedded into a bigger image
+            if (factor > 1.0)
+            {
+                // Up-sample -> crop
+                // Calculate the offset on both sides
+                const int rowOffset = (rows - finalImg.rows) / 2;
+                const int colOffset = (cols - finalImg.cols) / 2;
+
+                for (int i = 0; i < finalImg.rows; i++)
+                {
+                    for (int j = 0; j < finalImg.cols; j++)
+                    {
+                        finalImg.at<cv::Vec3f>(i, j) = img.at<cv::Vec3f>(i + rowOffset, j + colOffset);
+                        finalTarget.at<uchar>(i, j) = target.at<uchar>(i + rowOffset, j + colOffset);
+                    }
+                }
+            }
+            else
+            {
+                // Down-sample
+                // Calculate the offset on both sides
+                const int rowOffset = (finalImg.rows - rows) / 2;
+                const int colOffset = (finalImg.cols - cols) / 2;
+
+                for (int i = 0; i < img.rows; i++)
+                {
+                    for (int j = 0; j < img.cols; j++)
+                    {
+                        finalImg.at<cv::Vec3f>(i + rowOffset, j + colOffset) = img.at<cv::Vec3f>(i, j);
+                        finalTarget.at<uchar>(i + rowOffset, j + colOffset) = target.at<uchar>(i, j);
+                    }
+                }
+            }
+
+            finalImg.copyTo(data.img);
+            finalTarget.copyTo(data.target);
+        }
+
+    private:
+        /**
+         * The zooming range. The zooming factor will be sampled from (1 - range, 1 + range).
+         */
+        double range;
+    };
 }
