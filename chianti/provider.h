@@ -6,6 +6,7 @@
 
 #include <string>
 #include <array>
+#include <cmath>
 
 namespace Chianti {
     /**
