@@ -426,4 +426,259 @@ namespace Chianti {
          */
         double range;
     };
+
+    /**
+     * Augments the image by randomly rotating the image.
+     */
+    class RotateAugmentor : public IAugmentor {
+    public:
+        /**
+         * Initializes a new instance of the RotateAugmentor class.
+         */
+        RotateAugmentor(double range) : range(range) {}
+
+        /**
+         * Augments the given ImageLabelPair.
+         */
+        void augment(ImageLabelPair& data) const
+        {
+            std::random_device rd;
+            std::mt19937 g(rd());
+            std::uniform_real_distribution<double> d(-range, range);
+
+            // Sample the rotation angle
+            double factor = d(g);
+            if (factor < 0)
+            {
+                factor += 360;
+            }
+
+            const int rows = static_cast<int>(data.img.rows);
+            const int cols = static_cast<int>(data.img.cols);
+
+            // Rotate the data
+            cv::Mat img, target;
+            cv::Mat M = cv::getRotationMatrix2D(cv::Point2f(cols/2,rows/2), factor, 1);
+
+            cv::warpAffine(data.img, img, M, cv::Size(cols, rows));
+            cv::warpAffine(data.target, target, M, cv::Size(cols, rows));
+
+            img.copyTo(data.img);
+            target.copyTo(data.target);
+        }
+
+    private:
+        /**
+         * The rotation angle range.
+         */
+        double range;
+    };
+
+    /**
+     * Augments the image by randomly convolving it with a Gaussian kernel..
+     */
+    class BlurAugmentor : public IAugmentor {
+    public:
+        /**
+         * Initializes a new instance of the BlurAugmentor class.
+         */
+        BlurAugmentor(double range) : range(range) {}
+
+        /**
+         * Augments the given ImageLabelPair.
+         */
+        void augment(ImageLabelPair& data) const
+        {
+            if (this->range <= 0)
+            {
+                return;
+            }
+
+            std::random_device rd;
+            std::mt19937 g(rd());
+            std::uniform_real_distribution<double> d(0, range);
+
+            // Blur the data
+            const double sigma = d(g);
+            cv::Mat img;
+            int kernelWidth = static_cast<int>(std::ceil(sigma) * 3);
+            if ((kernelWidth % 2) == 0)
+            {
+                kernelWidth++;
+            }
+            cv::GaussianBlur(data.img, img, cv::Size(kernelWidth, kernelWidth), sigma);
+
+            img.copyTo(data.img);
+        }
+
+    private:
+        /**
+         * The rotation angle range.
+         */
+        double range;
+    };
+
+    /**
+     * Augments the image by randomly adjusting the saturation.
+     */
+    class SaturationAugmentor : public IAugmentor {
+    public:
+        /**
+         * Initializes a new instance of the SaturationAugmentor class.
+         */
+        SaturationAugmentor(double rangeFrom, double rangeTo) : rangeFrom(rangeFrom), rangeTo(rangeTo) {}
+
+        /**
+         * Augments the given ImageLabelPair.
+         */
+        void augment(ImageLabelPair& data) const
+        {
+            std::random_device rd;
+            std::mt19937 g(rd());
+            std::uniform_real_distribution<double> d(rangeFrom, rangeTo);
+
+            const int rows = static_cast<int>(data.img.rows);
+            const int cols = static_cast<int>(data.img.cols);
+
+            // Blur the data
+            const float offset = static_cast<float>(d(g));
+            cv::Mat img;
+            cv::cvtColor(data.img, img, CV_BGR2HSV);
+
+            // Adjust the saturation channel
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < cols; j++)
+                {
+                    img.at<cv::Vec3f>(i, j)[1] *= offset;
+                    const auto value = img.at<cv::Vec3f>(i, j)[1];
+                    img.at<cv::Vec3f>(i, j)[1] = std::max(0.0f, std::min(1.0f, value));
+                }
+            }
+            
+            cv::cvtColor(img, data.img, CV_HSV2BGR);
+        }
+
+    private:
+        /**
+         * The parameter range
+         */
+        double rangeFrom;
+        double rangeTo;
+    };
+
+    /**
+     * Augments the image by randomly adjusting the saturation.
+     */
+    class HueAugmentor : public IAugmentor {
+    public:
+        /**
+         * Initializes a new instance of the HueAugmentor class.
+         */
+        HueAugmentor(double rangeFrom, double rangeTo) : rangeFrom(rangeFrom), rangeTo(rangeTo) {}
+
+        /**
+         * Augments the given ImageLabelPair.
+         */
+        void augment(ImageLabelPair& data) const
+        {
+            std::random_device rd;
+            std::mt19937 g(rd());
+            std::uniform_real_distribution<double> d(rangeFrom, rangeTo);
+
+            const int rows = static_cast<int>(data.img.rows);
+            const int cols = static_cast<int>(data.img.cols);
+
+            // Blur the data
+            const float offset = static_cast<float>(d(g));
+            cv::Mat img;
+            cv::cvtColor(data.img, img, CV_BGR2HSV);
+
+            // Adjust the saturation channel
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < cols; j++)
+                {
+                    auto value = img.at<cv::Vec3f>(i, j)[0];
+                    value += offset;
+
+                    if (value > 360)
+                    {
+                        value -= 360;
+                    }
+                    else if (value < 0)
+                    {
+                        value += 360;
+                    }
+                    img.at<cv::Vec3f>(i, j)[0] = value;
+                }
+            }
+            
+            cv::cvtColor(img, data.img, CV_HSV2BGR);
+        }
+
+    private:
+        /**
+         * The parameter range
+         */
+        double rangeFrom;
+        double rangeTo;
+    };
+
+    /**
+     * Augments the image by randomly adjusting the saturation.
+     */
+    class BrightnessAugmentor : public IAugmentor {
+    public:
+        /**
+         * Initializes a new instance of the BrightnessAugmentor class.
+         */
+        BrightnessAugmentor(double rangeFrom, double rangeTo) : rangeFrom(rangeFrom), rangeTo(rangeTo) {}
+
+        /**
+         * Augments the given ImageLabelPair.
+         */
+        void augment(ImageLabelPair& data) const
+        {
+            std::random_device rd;
+            std::mt19937 g(rd());
+            std::uniform_real_distribution<double> d(rangeFrom, rangeTo);
+
+            const int rows = static_cast<int>(data.img.rows);
+            const int cols = static_cast<int>(data.img.cols);
+
+            // Blur the data
+            const float offset = static_cast<float>(d(g));
+
+            // Adjust the saturation channel
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < cols; j++)
+                {
+                    for (int c = 0; c < 3; c++)
+                    {
+                        auto value = data.img.at<cv::Vec3f>(i, j)[c];
+                        value += offset;
+
+                        if (value > 1)
+                        {
+                            value = 1;
+                        }
+                        else if (value < 0)
+                        {
+                            value = 0;
+                        }
+                        data.img.at<cv::Vec3f>(i, j)[c] = value;
+                    }
+                }
+            }
+        }
+
+    private:
+        /**
+         * The parameter range
+         */
+        double rangeFrom;
+        double rangeTo;
+    };
 }

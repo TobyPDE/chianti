@@ -264,8 +264,9 @@ namespace Chianti {
                             // Convert it to RGB
                             const int _i1 = 2 - i1;
                             imgs[i0 * imgsStrides[0] + _i1 * imgsStrides[1] + i2 * imgsStrides[2] + i3 * imgsStrides[3]] = static_cast<float>(img[i1]);
-                            if (std::isnan(imgs[i0 * imgsStrides[0] + _i1 * imgsStrides[1] + i2 * imgsStrides[2] + i3 * imgsStrides[3]])) {
-                                imgs[i0 * imgsStrides[0] + _i1 * imgsStrides[1] + i2 * imgsStrides[2] + i3 * imgsStrides[3]] = 1.0f;
+                            const auto value = imgs[i0 * imgsStrides[0] + _i1 * imgsStrides[1] + i2 * imgsStrides[2] + i3 * imgsStrides[3]];
+                            if (std::isnan(value) || !std::isfinite(value)) {
+                                imgs[i0 * imgsStrides[0] + _i1 * imgsStrides[1] + i2 * imgsStrides[2] + i3 * imgsStrides[3]] = 0.0f;
                             }
                         }
                     }

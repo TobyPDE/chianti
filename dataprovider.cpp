@@ -629,6 +629,7 @@ static PyObject* translationAugmentor(PyObject* self, PyObject* args, PyObject *
     return (PyObject*) augmentor;
 }
 
+
 static PyObject* zoomingAugmentor(PyObject* self, PyObject* args, PyObject *keywords)
 {
     static char *keywordList[] = {"range", 0};
@@ -647,6 +648,122 @@ static PyObject* zoomingAugmentor(PyObject* self, PyObject* args, PyObject *keyw
 
     PyAugmentor* augmentor = (PyAugmentor*)PyAugmentorType.tp_alloc(&PyAugmentorType, 0);
     augmentor->augmentor = std::make_shared<Chianti::ZoomingAugmentor>(range);
+
+    return (PyObject*) augmentor;
+}
+
+static PyObject* rotateAugmentor(PyObject* self, PyObject* args, PyObject *keywords)
+{
+    static char *keywordList[] = {"range", 0};
+
+    double range = 0.5;
+
+    if (!PyArg_ParseTupleAndKeywords(
+            args,
+            keywords,
+            "d",
+            keywordList,
+            &range))
+    {
+        return 0;
+    }
+
+    PyAugmentor* augmentor = (PyAugmentor*)PyAugmentorType.tp_alloc(&PyAugmentorType, 0);
+    augmentor->augmentor = std::make_shared<Chianti::RotateAugmentor>(range);
+
+    return (PyObject*) augmentor;
+}
+
+static PyObject* blurAugmentor(PyObject* self, PyObject* args, PyObject *keywords)
+{
+    static char *keywordList[] = {"range", 0};
+
+    double range = 0.5;
+
+    if (!PyArg_ParseTupleAndKeywords(
+            args,
+            keywords,
+            "d",
+            keywordList,
+            &range))
+    {
+        return 0;
+    }
+
+    PyAugmentor* augmentor = (PyAugmentor*)PyAugmentorType.tp_alloc(&PyAugmentorType, 0);
+    augmentor->augmentor = std::make_shared<Chianti::BlurAugmentor>(range);
+
+    return (PyObject*) augmentor;
+}
+
+static PyObject* saturationAugmentor(PyObject* self, PyObject* args, PyObject *keywords)
+{
+    static char *keywordList[] = {"rangeFrom", "rangeTo", 0};
+
+    double rangeFrom = 0.5;
+    double rangeTo = 1.5;
+
+    if (!PyArg_ParseTupleAndKeywords(
+            args,
+            keywords,
+            "dd",
+            keywordList,
+            &rangeFrom,
+            &rangeTo))
+    {
+        return 0;
+    }
+
+    PyAugmentor* augmentor = (PyAugmentor*)PyAugmentorType.tp_alloc(&PyAugmentorType, 0);
+    augmentor->augmentor = std::make_shared<Chianti::SaturationAugmentor>(rangeFrom, rangeTo);
+
+    return (PyObject*) augmentor;
+}
+
+static PyObject* hueAugmentor(PyObject* self, PyObject* args, PyObject *keywords)
+{
+    static char *keywordList[] = {"rangeFrom", "rangeTo", 0};
+
+    double rangeFrom = 0.5;
+    double rangeTo = 1.5;
+
+    if (!PyArg_ParseTupleAndKeywords(
+            args,
+            keywords,
+            "dd",
+            keywordList,
+            &rangeFrom,
+            &rangeTo))
+    {
+        return 0;
+    }
+
+    PyAugmentor* augmentor = (PyAugmentor*)PyAugmentorType.tp_alloc(&PyAugmentorType, 0);
+    augmentor->augmentor = std::make_shared<Chianti::HueAugmentor>(rangeFrom, rangeTo);
+
+    return (PyObject*) augmentor;
+}
+
+static PyObject* brightnessAugmentor(PyObject* self, PyObject* args, PyObject *keywords)
+{
+    static char *keywordList[] = {"rangeFrom", "rangeTo", 0};
+
+    double rangeFrom = 0.5;
+    double rangeTo = 1.5;
+
+    if (!PyArg_ParseTupleAndKeywords(
+            args,
+            keywords,
+            "dd",
+            keywordList,
+            &rangeFrom,
+            &rangeTo))
+    {
+        return 0;
+    }
+
+    PyAugmentor* augmentor = (PyAugmentor*)PyAugmentorType.tp_alloc(&PyAugmentorType, 0);
+    augmentor->augmentor = std::make_shared<Chianti::BrightnessAugmentor>(rangeFrom, rangeTo);
 
     return (PyObject*) augmentor;
 }
@@ -672,6 +789,11 @@ static PyMethodDef chiantiMethods[] = {
         {"gamma_augmentor", (PyCFunction)gammaAugmentor, METH_VARARGS | METH_KEYWORDS, "Creates a new random gamma augmentor."},
         {"translation_augmentor", (PyCFunction)translationAugmentor, METH_VARARGS | METH_KEYWORDS, "Creates a new random translation augmentor."},
         {"zooming_augmentor", (PyCFunction)zoomingAugmentor, METH_VARARGS | METH_KEYWORDS, "Creates a new random zooming augmentor."},
+        {"rotate_augmentor", (PyCFunction)rotateAugmentor, METH_VARARGS | METH_KEYWORDS, "Creates a new random zooming augmentor."},
+        {"blur_augmentor", (PyCFunction)blurAugmentor, METH_VARARGS | METH_KEYWORDS, "Creates a new random zooming augmentor."},
+        {"saturation_augmentor", (PyCFunction)saturationAugmentor, METH_VARARGS | METH_KEYWORDS, "Creates a new random zooming augmentor."},
+        {"hue_augmentor", (PyCFunction)hueAugmentor, METH_VARARGS | METH_KEYWORDS, "Creates a new random zooming augmentor."},
+        {"brightness_augmentor", (PyCFunction)brightnessAugmentor, METH_VARARGS | METH_KEYWORDS, "Creates a new random zooming augmentor."},
         {"cityscapes_label_transformation_augmentor", (PyCFunction)cityscapesLabelTransformationAugmentor, METH_NOARGS, "Creates a new augmentation step to transform the cityscapes label ids to training ids."},
         {NULL, NULL, 0, NULL}
 };
