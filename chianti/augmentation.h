@@ -461,7 +461,7 @@ namespace Chianti {
             cv::Mat M = cv::getRotationMatrix2D(cv::Point2f(cols/2,rows/2), factor, 1);
 
             cv::warpAffine(data.img, img, M, cv::Size(cols, rows));
-            cv::warpAffine(data.target, target, M, cv::Size(cols, rows));
+            cv::warpAffine(data.target, target, M, cv::Size(cols, rows), CV_INTER_NN, cv::BORDER_CONSTANT, 255);
 
             img.copyTo(data.img);
             target.copyTo(data.target);

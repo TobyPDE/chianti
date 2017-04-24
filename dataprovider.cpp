@@ -744,6 +744,7 @@ static PyObject* hueAugmentor(PyObject* self, PyObject* args, PyObject *keywords
     return (PyObject*) augmentor;
 }
 
+
 static PyObject* brightnessAugmentor(PyObject* self, PyObject* args, PyObject *keywords)
 {
     static char *keywordList[] = {"rangeFrom", "rangeTo", 0};
