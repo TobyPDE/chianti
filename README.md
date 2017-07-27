@@ -19,7 +19,6 @@ The library consists of four major components:
 You need to have OpenCV and Boost installed. 
 ```
 $ sudo apt-get install libopencv-dev libboost-all-dev
-
 ```
 
 Check out the repository. 
