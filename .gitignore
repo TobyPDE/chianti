@@ -1,8 +1,7 @@
-cmake-*
-CMake*
 build/
 .vscode/
 .idea/
+nbproject/
 
 # Created by https://www.gitignore.io/api/python,cmake,clion,c++,c
 

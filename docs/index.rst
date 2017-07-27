@@ -6,129 +6,220 @@
 Chianti
 ===================================
 
-This Python extension is for people who train semantic segmentation systems with Python. 
-It is primarily aimed at users of deep learning libraries that don't offer asynchronous data streams (e.g. Theano/Lasagne).
-This extension allows you to load batches of (augmented) images and label images asynchronously. 
-This allows you to maximize GPU load during training.
+This is a Python library for loading and augmenting training data asynchronously
+in the background. It is primarily geared towards pipelines for semantic 
+segmentation where you have a source image and a densely annotated target image.
+
+The library consists of four major components:
+
+* A set of image loaders that provide the raw image data. 
+* A set of iterators that determine the order in which we iterate over a given 
+  dataset
+* A set of augmentors for synthetically increasing the diversity of the data set. 
+* A data provider that connects all components and returns batches of augmented 
+  images.
 
 .. py:class:: DataProvider
 
-    This class allows you to load batches of (source, target) pairs asynchronously. Standard transformations:
+    This class allows you to load batches of (source, target) pairs 
+    asynchronously. Standard transformations:
 
-    - The source image (RGB) is loaded and then cast to float32. Its intensity values are scaled to [0, 1]
-    - The target image (single channel 8-bit) is loaded and then cast to int32. Pixels of value 255 are mapped to the value -1, which is considered to be a void label.
-
-    .. py:method:: __init__(iterator, batchsize, [augmentors])
+    .. py:method:: __init__(augmentor, source_img_loader, target_img_loader, iterator, batch_size)
 
         Initializes a new instance of the DataProvider class.
 
+        :param augmentor: An instance of :py:class:`Augmentor`.
+        :param source_img_loader: An instance of :py:class:`Loader`.
+        :param target_img_loader: An instance of :py:class:`Loader`.
         :param iterator: An instance of :py:class:`Iterator`.
         :param batchsize: The size of the image batches.
-        :param augmentors: A list of augmentation steps.
+        :type augmentor: Augmentor
+        :type source_img_loader: Loader
+        :type arget_img_loader: Loader
         :type iterator: Iterator
         :type batchsize: int
-        :type augmentors: list(Augmentor)
 
     .. py:method:: next()
 
         Returns the next batch of images.
 
-        :return: An instance of :py:class:`Batch`
+        :return: A tuple of two numpy arrays.
         
     .. py:method:: reset()
 
-        Resets the underlying iterator to the beginning. This is useful if you want to deterministically iterate over a dataset.
+        Resets the underlying iterator to the beginning. This is useful if you 
+        want to iterate over a dataset deterministically.
 
     .. py:method:: get_num_batches()
 
         Returns the total number of batches per epoch. 
-
+        
         :return: The number of batches per epoch.
         :rtype: int
         
 
 .. py:class:: Iterator
 
-    A data iterator class. Use one of these factory methods in order to create new instances:
+    A data iterator class.
 
-    - :py:func:`sequential_iterator`
-    - :py:func:`random_iterator`
+    .. py:method:: next()
+
+        Returns the next item. 
+
+        :return: A tuple of two strings.
+        
+    .. py:method:: reset()
+
+        Resets the iterator to its initial state. This also works for iterators
+        that involve randomness.
+
+    .. py:method:: get_num_elements()
+
+        Returns the total number of elements in the structure the we iterate 
+        over. 
+        
+        :return: The number of elements in the underlying structure.
+        :rtype: int
+        
+    .. py:staticmethod:: Sequential(data_list)
+        
+        Factory method that creates a new sequential iterator. A sequential 
+        iterator iterates deterministically over the provided list of elements.
+
+        :param data_list: A list of string tuples.
+        :type data_list: list
+        
+    .. py:staticmethod:: Random(data_list)
+        
+        Factory method that creates a new random iterator. A random
+        iterator iterates over the dataset randomly in epochs. This means at the
+        beginning of each epoch, the dataset is shuffled and the iterated over
+        deterministically.
+
+        :param data_list: A list of string tuples.
+        :type data_list: list
+        
+    .. py:staticmethod:: WeightedRandom(data_list, weights)
+        
+        Factory method that creates a new weighted random iterator. This 
+        iterator draws each training example independently from the dataset 
+        with a probability proportional to the associated weights.
+
+        :param data_list: A list of string tuples.
+        :param weights: A list or numpy array of non-negative weights. There 
+                        must be exactly one weight for each element of the data
+                        list.
+        :type data_list: list
 
 
-.. py:function:: sequential_iterator(files)
+.. py:class:: Loader
+    
+    A loader class for providing raw image data.
 
-    Creates a new :py:class:`Iterator` instance that iterates sequentially over the dataset.
+    .. py:staticmethod:: RGB()
 
-    :param files: A list of filename tuples. The first entry of each tuple is considered to be the filename of the source image. The second entry is considered to be the target filename.
-    :type files: list(tuple[string, string])
-    :return: A new sequantial iterator.
-    :rtype: Iterator
+        Factory method for creating a loader that simply loads RGB images from 
+        the hard drive. 
 
-.. py:function:: random_iterator(files)
+    .. py:staticmethod:: Label()
 
-    Creates a new :py:class:`Iterator` instance that iterates randomly over the dataset. The iterator uses epoch. This means that it traverses the entire dataset in a random order, which changes after each pass over the dataset.
+        Factory method for creating a loader that loads 8bit class label images
+        from the hard drive.
 
-    :param files: A list of filename tuples. The first entry of each tuple is considered to be the filename of the source image. The second entry is considered to be the target filename.
-    :type files: list(tuple[string, string])
-    :return: A new random iterator.
-    :rtype: Iterator
+    .. py:staticmethod:: ValueMapper(value_map)
+
+        Factory method for creating a loader that loads an 8bit class label
+        image from the hard drive and then maps the pixel values according to
+        the provided mapping.
+
+        :param value_map: A list of numpy array of exactly 256 elements that 
+                          represents a permutation. 
+
+    .. py:staticmethod:: ColorMapper(color_map)
+
+        Factory method for creating a loader that loads an RGB class label
+        image from the hard drive and then maps the pixel values according to
+        the provided mapping.
+
+        :param color_map: A dict that maps colors (RGB tuples) to 8bit integer
+                          values.
+
 
 .. py:class:: Augmentor
 
-    A data augmentation class. Use one of these factory methods in order to create new instances:
-
-    - :py:func:`subsample_augmentor`
-    - :py:func:`gamma_augmentor`
-    - :py:func:`translation_augmentor`
-    - :py:func:`cityscapes_label_transformation_augmentor`
+    A data augmentation class. 
     
+    .. py:staticmethod:: Subsample(factor)
 
-.. py:function:: subsample_augmentor(factor)
+        Factory method that creates an augmentor that subsamples the source and
+        the target image by the given factor.
 
-    Creates a new :py:class:`Augmentor` instance that resizes the images by subsampling them by a given subsampling factor.
+        :param factor: Subsampling factor.
+        :type factor: int
+    
+    .. py:staticmethod:: Gamma(strength)
 
-    :param factor: The subsampling factor.
-    :type factor: int
-    :return: A new subsample augmentor.
-    :rtype: Augmentor
+        Factory method that creates an augmentor that performs random gamma
+        augmentation on the source image.
 
+        :param strength: Strength of the augmentation. Must be a value between 0
+                         and 0.5.
+        :type strength: double
+    
+    .. py:staticmethod:: Translation(factor)
 
-.. py:function:: gamma_augmentor(gamma)
+        Factory method that creates an augmentor that randomly translates both
+        the source and the target image. On the source image, it uses reflection
+        padding whereas on the target image it uses constant padding with void 
+        labels (value -1).
 
-    Creates a new :py:class:`Augmentor` instance that applies brightness augmentation by performining random gamma corrections.
+        :param offset: Maximum translation offset in any direction.
+        :type offset: int
+    
+    .. py:staticmethod:: Zooming(offset)
 
-    :param gamma: Determines the strength of the gamma augmentation. Valid values are in (0, 0.5) where 0 corresponds to no augmentation and 0.5 corresponds to the strongest augmentation.
-    :type gamma: double
-    :return: A new gamma augmentor.
-    :rtype: Augmentor
+        Factory method that creates an augmentor that randomly zooms into the 
+        image center. 
 
-.. py:function:: translation_augmentor(offset)
+        :param factor: Maximum zooming factor.
+        :type factor: double
+    
+    .. py:staticmethod:: Rotation(angel)
 
-    Creates a new :py:class:`Augmentor` instance that applies random translation augmentation.
+        Factory method that creates an augmentor that randomly rotates the 
+        images.
 
-    :param offset: The maximum offset by which an image is translated.
-    :type offset: int
-    :return: A new translation augmentor.
-    :rtype: Augmentor
+        :param angel: Maximum rotation angel.
+        :type angel: double
+    
+    .. py:staticmethod:: Crop(size, num_classes)
 
-.. py:function:: cityscapes_label_transformation_augmentor()
+        Factory method that creates a crop augmentor. A crop augmentor randomly
+        samples square crops from an image. The probability of a crop being 
+        sampled is proportional to the entropy of the class distribution within
+        the crop.
 
-    Creates a new :py:class:`Augmentor` instance that maps CityScapes label ids to CityScapes training ids. The resulting target images will have values in [-1, 18] where -1 corresponds to void labels.
+        :param size: The size of the crop. 
+        :param num_classes: The total number of classes. 
+        :type size: int
+        :type num_classes: int
 
-    :return: A new cityscapes label transformation augmentor.
-    :rtype: Augmentor
+    .. py:staticmethod:: Saturation(delta_min, delta_max)
 
+        Factory method that creates an augmentor that randomly augments the 
+        image's saturation.
 
-.. py:class:: Batch
+        :param delta_min: Minimum saturation multiplier. 
+        :param delta_max: Maximum saturation multiplier. 
+        :type delta_min: double
+        :type delta_max: double
 
-    This class holds the batch tensors.
+    .. py:staticmethod:: Hue(delta_min, delta_max)
 
-    .. py:attribute:: imgs
+        Factory method that creates an augmentor that randomly augments the 
+        image's hue.
 
-        The tensor of images.
-
-    .. py:attribute:: targets
-
-        The tensor of target values.
-
-
+        :param delta_min: Minimum hue multiplier. 
+        :param delta_max: Maximum hue multiplier. 
+        :type delta_min: double
+        :type delta_max: double
